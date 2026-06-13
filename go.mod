@@ -5,6 +5,9 @@ go 1.26.3
 require (
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/gofiber/fiber/v3 v3.3.0
+	github.com/jmoiron/sqlx v1.4.0
+	github.com/joho/godotenv v1.5.1
+	github.com/lib/pq v1.12.3
 )
 
 require (
