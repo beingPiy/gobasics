@@ -1,5 +1,18 @@
 -- schema.sql (run this once to set up the database schema)
 
+-- Users table for authentication
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,  -- unique constraint to prevent duplicate emails
+    password_hash TEXT NOT NULL, -- store hashed passwords, not plain text
+    role TEXT NOT NULL DEFAULT 'user',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email) ;
+
+
+
 -- Artists table : the "one" side of the 
 -- one-to-many relationship with albums
 CREATE TABLE IF NOT EXISTS artists (

@@ -33,6 +33,7 @@ import (
 	"gobasics/db"         // for connecting to the database
 	"gobasics/handlers"   // for handling API requests
 	"gobasics/repository" // for interacting with the database through a repository pattern
+	"gobasics/middleware" // for authentication middleware
 )
 
 //---------------------------------------------------------------
@@ -140,9 +141,13 @@ func main() {
 	// handler depends on the repository
 	// routes depend on the handler
 
+	// Create the user repository, which will interact with the database
 	// Create the album repository, which will interact with the database
+	userRepo := repository.NewUserRepository(database)
 	albumRepo := repository.NewAlbumRepository(database)
+	
 	albumHandler := handlers.NewAlbumHandler(albumRepo)
+	authHandler := handlers.NewAuthHandler(userRepo)	
 
 	// 4. Initializes Fiber app
 	app := fiber.New(fiber.Config{
@@ -167,11 +172,28 @@ func main() {
 	app.Use(Logger())
 
 	// 6. Routes
+
+	// Public routes (no authentication required)
+	app.Post("/register", authHandler.Register)
+	app.Post("/login", authHandler.Login)
 	app.Get("/albums", albumHandler.GetAllAlbums)
 	app.Get("/albums/:id", albumHandler.GetAlbumByID)
-	app.Post("/albums", albumHandler.CreateAlbum)
-	app.Put("/albums/:id", albumHandler.UpdateAlbum)
-	app.Delete("/albums/:id", albumHandler.DeleteAlbum)
+	
+	// Protected routes (authentication required)
+	// The Protected() middleware will validate the JWT token
+	// and set user information in the request context
+	auth := app.Group("/", middleware.Protected())
+	auth.Post("/albums", albumHandler.CreateAlbum)
+	auth.Put("/albums/:id", albumHandler.UpdateAlbum)
+	auth.Delete("/albums/:id", albumHandler.DeleteAlbum)
+
+	// Admin-only routes (admin role required)
+	// The AdminOnly() middleware will check if the user has an admin role
+	admin := auth.Group("/admin", middleware.AdminOnly())
+	admin.Get("/users", func(c fiber.Ctx) error {
+		// Implementation for fetching all users (admin only)
+		return c.JSON(fiber.Map{"message": "Admin access: list of users"})
+	})
 
 	// 7. Start the server on port 3000
 	log.Println("Starting server on port 3000...")
